@@ -8,6 +8,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.control.Label;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -15,7 +16,7 @@ import java.util.ResourceBundle;
 import handlers.NPCHandler;
 import handlers.UserInputHandler;
 import entityTypes.CoinEntity;
-import entityTypes.EntityTypeHandler;
+import entityTypes.EntityTypeHandler.*;
 import interfaces.Entity;
 
 public class Controller implements Initializable {
@@ -27,10 +28,14 @@ public class Controller implements Initializable {
     @FXML private Rectangle CoinReference;
     private final int MAX_COIN_AMOUNT = 4;
 
-    @FXML private Rectangle playerDemo; //Player Model
+    @FXML private Rectangle PlayerDemo; //Player Model
     public boolean playerDead = false;
 
-    @FXML private Button startButton;
+    @FXML private Button StartButton;
+
+    @FXML private Label ScoreText;
+
+    @FXML private Label DeathText;
 
     private UserInputHandler input;
     private final int movementSpeed = 5;
@@ -39,11 +44,16 @@ public class Controller implements Initializable {
 
     public static int score = 0;
 
-    private final int NPC_UPDATE_COOLDOWN = 5; //cooldown in seconds
-    private long previousTime;
-    private int timeCounter = 0;
+    private final int NPC_UPDATE_COOLDOWN = 15; //cooldown in seconds
+    private final int SCORE_UPDATE_COOLDOWN = 1; //cooldown in seconds
+    private long npcTimer;
+    private long scoreTimer;
+    private int coinCounter = 0;
 
     private int coinAmount = 0;
+
+    private boolean firstScoreChangeActive = false;
+    private boolean secondScoreChangeActive = false;
 
 
     @Override
@@ -55,7 +65,7 @@ public class Controller implements Initializable {
         npcFigures = new NPCHandler(scene);
         for(int amount = 0; amount < ENEMY_AMOUNT; amount++) //Creating all NPC Objects
         {
-            npcFigures.add_npc(EnemyReference, EntityTypeHandler.ENTITY_TYPE.ENEMY);
+            npcFigures.add_npc(EnemyReference, ENTITY_TYPE.ENEMY);
         }
 
         Platform.runLater(() -> ScreenScaler.ScaleElements(scene));
@@ -68,14 +78,14 @@ public class Controller implements Initializable {
         @Override //Write all code expected to run per frame here
         public void handle(long timestamp)
         {
-            double offset = playerDemo.getWidth() / 4;
-            if (input.isAPressed() && playerDemo.getLayoutX() >= -offset) 
+            double offset = PlayerDemo.getWidth() / 4;
+            if (input.isAPressed() && PlayerDemo.getLayoutX() >= -offset) 
             {
-                playerDemo.setLayoutX(playerDemo.getLayoutX() - movementSpeed);
+                PlayerDemo.setLayoutX(PlayerDemo.getLayoutX() - movementSpeed);
             }
-            if (input.isDPressed() && playerDemo.getLayoutX() <= (scene.getWidth() - playerDemo.getWidth() + offset) ) 
+            if (input.isDPressed() && PlayerDemo.getLayoutX() <= (scene.getWidth() - PlayerDemo.getWidth() + offset) ) 
             {
-                playerDemo.setLayoutX(playerDemo.getLayoutX() + movementSpeed);
+                PlayerDemo.setLayoutX(PlayerDemo.getLayoutX() + movementSpeed);
             }
 
             npcFigures.update();
@@ -83,16 +93,19 @@ public class Controller implements Initializable {
             collisionCheck();
 
             long currentTime = System.currentTimeMillis(); //updating score via time
-            if(currentTime - previousTime >= (NPC_UPDATE_COOLDOWN * 1_000))
+            if(currentTime - npcTimer >= (NPC_UPDATE_COOLDOWN * 1_000))
             {
-                if(timeCounter % 5 == 0 && coinAmount < MAX_COIN_AMOUNT)
+                if(coinAmount < MAX_COIN_AMOUNT)
                 {
-                    npcFigures.add_npc(CoinReference, EntityTypeHandler.ENTITY_TYPE.COIN);
+                    npcFigures.add_npc(CoinReference, ENTITY_TYPE.COIN);
+                    coinCounter++;
                 }
-
-                previousTime = currentTime;
-                score += 1 + (timeCounter * 1.5);
-                timeCounter++;
+                npcTimer = currentTime;
+            }
+            else if(currentTime - scoreTimer >= (SCORE_UPDATE_COOLDOWN * 1_000))
+            {
+                scoreTimer = currentTime;
+                updateScore( (int) (1 + (coinCounter * 1.5)) );
             }
         }
     };
@@ -104,9 +117,10 @@ public class Controller implements Initializable {
     {
         scene.requestFocus();
 
-        startButton.setOpacity(0.0);
+        StartButton.setOpacity(0.0);
 
-        previousTime = System.currentTimeMillis();
+        npcTimer = System.currentTimeMillis();
+        scoreTimer = System.currentTimeMillis();
 
         npcFigures.start();
 
@@ -122,20 +136,47 @@ public class Controller implements Initializable {
             Entity npc = npcFigures.getNPCObjectAt(i);
             Rectangle model = npcFigures.getNPCModelAt(i);
             
-            if(playerDemo.getBoundsInParent().intersects(model.getBoundsInParent()))
+            if(PlayerDemo.getBoundsInParent().intersects(model.getBoundsInParent()))
             {
-                npc.onCollision(playerDemo);
+                npc.onCollision(PlayerDemo);
                 switch(npc.getEntityType())
                 {
-                    case EntityTypeHandler.ENTITY_TYPE.ENEMY:
-                        timer.stop();
+                    case ENTITY_TYPE.ENEMY:
+                        endGame();
                         break;
 
-                    case EntityTypeHandler.ENTITY_TYPE.COIN: //updating score via token touch
-                        score += 10 + (CoinEntity.getCoinsCollected() * 10);
+                    case ENTITY_TYPE.COIN: //updating score via token touch
+                        updateScore(10 + (CoinEntity.getCoinsCollected() * 10));
                         break;
                 }
             }
         }
+    }
+
+
+    void updateScore(int amount)
+    {
+        score += amount;
+        ScoreText.setText("Score: " + score);
+
+        if(score >= 200 && !firstScoreChangeActive)
+        {
+            firstScoreChangeActive = true;
+            npcFigures.increaseHandlerDifficulty();
+        }
+        if(score >= 1_000 && !secondScoreChangeActive)
+        {
+            secondScoreChangeActive = true;
+            npcFigures.increaseHandlerDifficulty();
+        }
+    }
+
+
+    void endGame()
+    {
+        timer.stop();
+        System.out.println("Score: " + score);
+
+        DeathText.setOpacity(1.0);
     }
 }

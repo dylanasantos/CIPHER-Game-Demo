@@ -14,6 +14,9 @@ public class EnemyEntity extends EntityTypeHandler {
     public EnemyEntity(Rectangle model) 
     {
         this.model = model;
+
+        setEntityState(ENTITY_STATE.EASY);
+
         enemyInstances++;
         instanceCount = enemyInstances;
     }

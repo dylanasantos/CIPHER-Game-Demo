@@ -3,11 +3,10 @@ package handlers;
 import java.util.ArrayList;
 import java.util.List;
 
-import customExceptions.entityNotFoundException;
-import customExceptions.invalidStartException;
+import customExceptions.*;
 import entityTypes.CoinEntity;
 import entityTypes.EnemyEntity;
-import entityTypes.EntityTypeHandler.ENTITY_TYPE;
+import entityTypes.EntityTypeHandler.*;
 import interfaces.Entity;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
@@ -21,7 +20,7 @@ public class NPCHandler {
     private Pane scene;
     private List<Entity> entityList = new ArrayList<>(); //stores every model
 
-    private boolean managerActive = false;
+    private boolean handlerActive = false;
 
     private int enemyCounter = 0;
     private int coinCounter = 0;
@@ -101,6 +100,35 @@ public class NPCHandler {
     }
 
 
+    public void increaseHandlerDifficulty()
+    {
+        for(Entity e : entityList)
+        {
+            ENTITY_STATE currentEntityState = e.getEntityState();
+            ENTITY_STATE nextEntityState = null;
+
+            switch(currentEntityState)
+            {
+                case PASSIVE:
+                    nextEntityState = ENTITY_STATE.EASY;
+                    break;
+
+                case EASY:
+                    nextEntityState = ENTITY_STATE.MODERATE;
+                    break;
+
+                case MODERATE:
+                    nextEntityState = ENTITY_STATE.AGGRESSIVE;
+                    break;
+                
+                default:
+                    break;
+            }
+            e.setEntityState(nextEntityState);
+        }
+    }
+
+
     //Runs on each frame
     public void update()
     {
@@ -126,8 +154,8 @@ public class NPCHandler {
     */
     public void start()
     {
-        if(managerActive) { throw new invalidStartException("NPCManager start() can only be called once per scene set."); }
-        managerActive = true;
+        if(handlerActive) { throw new InvalidStartException("NPCManager start() can only be called once per scene set."); }
+        handlerActive = true;
         
         if(entityList.size() == 1) 
         { 
@@ -163,12 +191,19 @@ public class NPCHandler {
 
 
     //used for allowing objects to respawn without direct access to the NPCHandler object
-    public static void invokeRespawn(Pane scene, Entity e)
+    public static void invokeRespawn(Entity e)
     {
-        if(scene == null)
-            throw new entityNotFoundException("Invoked respawn on Entity with NPCHandler, yet not matching scene was found");
+        if(e == null)
+            throw new EntityNotFoundException("Invoked respawn on Entity with NPCHandler, yet entity object was passed as null.");
 
         Rectangle model = e.getModel();
+        if(e.getModel() == null)
+            throw new ModelNotFoundException("Invoked respawn on Entity with NPCHandler, yet entity model is null.");
+
+        if(model.getScene() == null)
+            throw new SceneNotFoundException("Invoked respawn on Entity with NPCHandler, yet scene for entity was not found.");
+
+        Pane scene = (Pane) model.getScene().getRoot();
 
         int typeDivisor = e.getEntityTypeAmount();
         int gridSection = e.getInstanceCount();

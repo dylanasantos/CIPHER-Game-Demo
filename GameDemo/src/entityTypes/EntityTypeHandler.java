@@ -7,18 +7,22 @@ public abstract class EntityTypeHandler implements Entity{
     protected final int MAX_RAND_HEIGHT = 400;
 
     protected double xVelocity = 0; //For "sliding" effects on higher difficulties
-    protected double yVelocity = 3.5;
+    protected double yVelocity = 0;
+    protected double standardYVelocity = 3.50;
 
     protected ENTITY_TYPE TYPE = null;
     
-    public static enum ENTITY_STATE {
+    public static enum ENTITY_STATE 
+    {
         PASSIVE,
         EASY,
         MODERATE,
         AGGRESSIVE
     };
+    protected ENTITY_STATE entityState = ENTITY_STATE.PASSIVE;
 
-    public static enum ENTITY_TYPE {
+    public static enum ENTITY_TYPE 
+    {
         COIN,
         ENEMY
     };
@@ -31,7 +35,6 @@ public abstract class EntityTypeHandler implements Entity{
     @Override
     public abstract int getEntityTypeAmount();
 
-    
 
     @Override
     public double getYVelocity()
@@ -43,6 +46,37 @@ public abstract class EntityTypeHandler implements Entity{
     public double getXVelocity()
     {
         return xVelocity;
+    }
+
+    @Override
+    public ENTITY_STATE getEntityState()
+    {
+        return this.entityState;
+    }
+
+    @Override
+    public void setEntityState(ENTITY_STATE state)
+    {
+        this.entityState = state;
+
+        switch(state)
+        {
+            case PASSIVE:
+                yVelocity *= standardYVelocity * 0.00;
+                break;
+
+            case EASY:
+                yVelocity = standardYVelocity * 1.00;
+                break;
+            
+            case MODERATE:
+                yVelocity = standardYVelocity * 1.60;
+                break;
+            
+            case AGGRESSIVE:
+                yVelocity = standardYVelocity * 2.15;
+                break;
+        }
     }
 
     @Override

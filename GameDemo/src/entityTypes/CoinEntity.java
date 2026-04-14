@@ -1,7 +1,6 @@
 package entityTypes;
 
 import handlers.NPCHandler;
-import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 
 //NOTE: CoinHandler should multiply in correspondance to the NPC count & speed
@@ -15,8 +14,13 @@ public class CoinEntity extends EntityTypeHandler {
     private static int coinInstances = 0;
     private int instanceCount;
 
-    public CoinEntity(Rectangle model) {
+    //Refer to EntityTypeHandler
+    public CoinEntity(Rectangle model) 
+    {
         this.model = model;
+
+        setEntityState(ENTITY_STATE.EASY);
+
         coinInstances++;
         instanceCount = coinInstances;
     }
@@ -26,23 +30,46 @@ public class CoinEntity extends EntityTypeHandler {
         return model;
     }
 
+    
     public static int getCoinsCollected()
     {
         return coinsCollected;
     }
 
     @Override
-    public void onCollision(Rectangle collidingObject) { //coin should become invisible after collected
+    public void onCollision(Rectangle collidingObject) 
+    {
         model.setOpacity(0.0);
         coinsCollected++;
 
-        NPCHandler.invokeRespawn((Pane) model.getScene().getRoot(), this);
+        NPCHandler.invokeRespawn(this);
         model.setOpacity(1.0);
     }
 
     @Override
-    public ENTITY_TYPE getEntityType() {
+    public ENTITY_TYPE getEntityType() 
+    {
         return TYPE;
+    }
+
+    @Override
+    public void setEntityState(ENTITY_STATE state)
+    {
+        this.entityState = state;
+
+        switch(state)
+        {
+            case EASY:
+                yVelocity = standardYVelocity * 1.10;
+                break;
+            
+            case MODERATE:
+                yVelocity = standardYVelocity * 1.35;
+                break;
+            
+            default:
+                break;
+        }
     }
 
     @Override

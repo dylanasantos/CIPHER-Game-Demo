@@ -21,7 +21,8 @@ public class UserInputHandler {
         });
     }
 
-    private void updateKey(KeyCode key, boolean state) {
+    private void updateKey(KeyCode key, boolean state) 
+    {
         switch (key) {
             case A -> aPressed.set(state);
             case D -> dPressed.set(state);
